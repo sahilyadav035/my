@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Finder</title>
+    <style>
+        #map-container {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+        }
+        iframe {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Route Finder</h1>
+
+    <label for="destination-lat">Destination Latitude:</label>
+    <input type="text" id="destination-lat" placeholder="Enter Latitude">
+
+    <label for="destination-lon">Destination Longitude:</label>
+    <input type="text" id="destination-lon" placeholder="Enter Longitude">
+
+    <label for="mode">Travel Mode:</label>
+    <select id="mode">
+        <option value="driving">Driving</option>
+        <option value="cycling">Cycling</option>
+        <option value="walking">Walking</option>
+    </select>
+
+    <button onclick="findRoute()">Find Route</button>
+
+    <div id="result"></div>
+    <div id="map-container">
+        <iframe id="map" src=""></iframe>
+    </div>
+
+    <script>
+        // Function to get the user's current location
+        function getLocation(callback) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const originLat = position.coords.latitude;
+                    const originLon = position.coords.longitude;
+                    callback(originLat, originLon);
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        }
+
+        // Function to find the route between the user's location and the destination
+        function findRoute() {
+            const destLat = document.getElementById("destination-lat").value;
+            const destLon = document.getElementById("destination-lon").value;
+            const mode = document.getElementById("mode").value;
+
+            getLocation(function(originLat, originLon) {
+                const data = {
+                    origin_lat: originLat,
+                    origin_lon: originLon,
+                    dest_lat: destLat,
+                    dest_lon: destLon,
+                    mode: mode
+                };
+
+                fetch('/calculate_route', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.map_url) {
+                        document.getElementById('result').innerHTML = `Estimated Travel Time: ${result.travel_time.toFixed(2)} minutes`;
+                        document.getElementById('map').src = result.map_url;
+                    } else {
+                        document.getElementById('result').innerHTML = 'Error calculating the route.';
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('result').innerHTML = 'Error: ' + error.message;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
